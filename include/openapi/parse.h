@@ -7,17 +7,18 @@
 
 namespace openapi {
 
+template <typename T>
+struct is_optional : std::false_type {};
+
+template <typename T>
+struct is_optional<std::optional<T>> : std::true_type {};
+
+template <typename T>
+constexpr auto const is_optional_v = is_optional<T>::value;
+
 template <class T>
 concept Primitive = std::is_same_v<T, int> || std::is_same_v<T, double> ||
                     std::is_same_v<T, bool>;
-
-std::string_view get_param(boost::urls::url_view const& url,
-                           std::string_view name) {
-  auto const params = url.params();
-  auto const it = params.find(name);
-  utl::verify(it != params.end(), "parameter {} not found", name);
-  return (*it).value;
-}
 
 template <Primitive T>
 void parse(std::string_view s, T& v) {
@@ -32,9 +33,30 @@ void parse(std::string_view s, std::vector<T>& v) {
 }
 
 template <typename T>
-T parse_param(boost::urls::url_view const& url, std::string_view name) {
-  auto v = T{};
-  parse(get_param(url, name), v);
+void parse(std::string_view s, std::optional<T>& v) {
+  std::cout << "parsing: " << s << "\n";
+  auto x = T{};
+  parse(s, x);
+  v = x;
+}
+
+template <typename T>
+T parse_param(boost::urls::url_view const& url,
+              std::string_view name,
+              std::optional<T> const& default_value = std::nullopt) {
+  auto v = default_value.has_value() ? T{*default_value} : T{};
+  auto const params = url.params();
+  auto const it = params.find(name);
+  if (it != params.end()) {
+    parse((*it).value, v);
+    return v;
+  } else {
+    if constexpr (!is_optional_v<T>) {
+      if (!default_value.has_value()) {
+        throw utl::fail("required parameter {} not set", name);
+      }
+    }
+  }
   return v;
 }
 

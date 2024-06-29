@@ -39,8 +39,23 @@ TEST(openapi, parse_int_vector) {
 }
 
 TEST(openapi, parse_enum_vector) {
-  auto v = std::vector<mode>{};
-  parse("TRANSIT,WALK", v);
+  auto const v = parse_param<std::optional<std::vector<mode>>>(
+      "/?mode=TRANSIT,WALK", "mode");
+  EXPECT_EQ((std::vector{mode::TRANSIT, mode::WALK}), v);
+}
+
+TEST(openapi, parse_expect_optional) {
+  auto const v = parse_param<std::optional<std::vector<mode>>>("/", "mode");
+  EXPECT_FALSE(v.has_value());
+}
+
+TEST(openapi, parse_expect_throw) {
+  EXPECT_THROW(parse_param<std::vector<mode>>("/", "mode"), std::runtime_error);
+}
+
+TEST(openapi, parse_expect_default_value) {
+  auto const v = parse_param<std::vector<mode>>(
+      "/", "mode", std::vector<mode>{mode::TRANSIT, mode::WALK});
   EXPECT_EQ((std::vector{mode::TRANSIT, mode::WALK}), v);
 }
 
@@ -66,6 +81,7 @@ paths:
 
         - in: query
           name: min
+          required: true
           schema:
             type: integer
 
@@ -90,15 +106,14 @@ struct sort_params {
       min_{::openapi::parse_param<int>(url, "min")}
   {}
 
-  std::vector<mode> mode_;
+  std::optional<std::vector<mode>> mode_;
   int min_;
 };
 )";
 
   auto ss = std::stringstream{};
   ss << "\n";
-  auto const query_param = YAML::Load(kEnumArray)["paths"]["/items"]["get"];
-  write_params(query_param, ss);
+  write_types(YAML::Load(kEnumArray), ss);
   EXPECT_EQ(kExpected, ss.str());
 }
 
@@ -120,6 +135,7 @@ paths:
           name: min
           schema:
             type: integer
+            default: 0
 )";
 
   constexpr auto const kExpected = R"_(
@@ -141,14 +157,13 @@ struct sort_params {
       min_{::openapi::parse_param<int>(url, "min")}
   {}
 
-  sort sort_;
+  std::optional<sort> sort_;
   int min_;
 };
 )_";
 
   auto ss = std::stringstream{};
   ss << "\n";
-  auto const query_param = YAML::Load(kEnum)["paths"]["/items"]["get"];
-  write_params(query_param, ss);
+  write_types(YAML::Load(kEnum), ss);
   EXPECT_EQ(kExpected, ss.str());
 }
