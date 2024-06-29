@@ -1,0 +1,16 @@
+[utl]
+  url=git@github.com:motis-project/utl.git
+  branch=master
+  commit=8c61dcaa74a7f49695d58ce7aae9de7ecb566aa1
+[yaml-cpp]
+  url=git@github.com:triptix-tech/yaml-cpp.git
+  branch=master
+  commit=1d8ca1f35eb3a9c9142462b28282a848e5d29a91
+[boost]
+  url=git@github.com:motis-project/boost.git
+  branch=master
+  commit=1c3f21c1fa8b149da89e2f6bcb48b28fff30fa5e
+[cista]
+  url=git@github.com:felixguendling/cista.git
+  branch=master
+  commit=bec8bca4e6a38e38236a99ca4d4b767690fc01a1
