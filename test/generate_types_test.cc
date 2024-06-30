@@ -25,7 +25,8 @@ void parse(std::string_view s, mode& x) {
 
 struct sort_params {
   sort_params(boost::urls::url_view const& url)
-      : mode_{::openapi::parse_param<std::vector<mode>>(url, "mode")},
+      : mode_{::openapi::parse_param<std::vector<mode>>(
+            url, "mode", std::vector<mode>{mode::WALK, mode::TRANSIT})},
         min_{::openapi::parse_param<int>(url, "min")} {}
 
   std::vector<mode> mode_;
@@ -103,11 +104,11 @@ void parse(std::string_view s, mode& x) {
 
 struct sort_params {
   sort_params(boost::urls::url_view const& url) :
-      mode_{::openapi::parse_param<std::vector<mode>>(url, "mode")},
+      mode_{::openapi::parse_param<std::vector<mode>>(url, "mode", std::vector<mode>{mode::WALK,mode::TRANSIT})},
       min_{::openapi::parse_param<int>(url, "min")}
   {}
 
-  std::optional<std::vector<mode>> mode_;
+  std::vector<mode> mode_;
   int min_;
 };
 )";
@@ -161,13 +162,68 @@ void parse(std::string_view s, sort& x) {
 
 struct sort_params {
   sort_params(boost::urls::url_view const& url) :
-      sort_{::openapi::parse_param<sort>(url, "sort")},
-      min_{::openapi::parse_param<int>(url, "min")}
+      sort_{::openapi::parse_param<sort>(url, "sort", sort::asc)},
+      min_{::openapi::parse_param<int>(url, "min", 0)},
+      needle_{::openapi::parse_param<std::string_view>(url, "needle", "needle")}
   {}
 
-  std::optional<sort> sort_;
+  sort sort_;
   int min_;
+  std::string_view needle_;
 };
+)_";
+
+  auto ss = std::stringstream{};
+  ss << "\n";
+  write_types(YAML::Load(kEnum), ss);
+  EXPECT_EQ(kExpected, ss.str());
+}
+
+TEST(openapi, objects) {
+  constexpr auto const kEnum = R"(
+paths:
+  /items:
+    get:
+      operationId: getItems
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+components:
+  schemas:
+    Status:
+      type: string
+      enum:
+        - ON
+        - OFF
+
+    Pets:
+      type: array
+      items:
+        type: string
+        enum:
+          - A
+          - B
+
+    Item:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          $ref: '#/components/schemas/Status'
+        y:
+          $ref: '#/components/schemas/Pets'
+        z:
+          type: integer
+)";
+
+  constexpr auto const kExpected = R"_(
 )_";
 
   auto ss = std::stringstream{};
