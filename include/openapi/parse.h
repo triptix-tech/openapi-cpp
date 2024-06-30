@@ -34,7 +34,6 @@ void parse(std::string_view s, std::vector<T>& v) {
 
 template <typename T>
 void parse(std::string_view s, std::optional<T>& v) {
-  std::cout << "parsing: " << s << "\n";
   auto x = T{};
   parse(s, x);
   v = x;

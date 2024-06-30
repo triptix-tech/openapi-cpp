@@ -102,19 +102,19 @@ std::string get_type(std::string_view name,
   return required || has_default ? x : std::string{"std::optional<"} + x + ">";
 }
 
-bool is_required(YAML::Node const& x) { return x.IsDefined() && x.as<bool>(); }
-
 void gen_member(YAML::Node const& x, std::ostream& out) {
   auto const schema = x["schema"];
   auto const name = x["name"].as<std::string_view>();
   auto const type = to_type(schema["type"].as<std::string_view>());
   auto const enumera = schema["enum"];
+  auto const required = x["required"];
+  auto const is_required = x.IsDefined() && x.as<bool>();
   switch (type) {
     case type::kObject: throw utl::fail("not supported");
     case type::kArray:
     default:
-      out << "  " << get_type(name, schema, is_required(x["required"])) << " "
-          << name << "_;\n";
+      out << "  " << get_type(name, schema, is_required) << " " << name
+          << "_;\n";
   }
 }
 
@@ -122,7 +122,12 @@ void gen_member_init(YAML::Node const& x, std::ostream& out) {
   auto const schema = x["schema"];
   auto const name = x["name"].as<std::string_view>();
   out << "  " << name << "_{::openapi::parse_param<" << get_type(name, schema)
-      << ">(url, \"" << name << "\")}";
+      << ">(url, \"" << name << "\"";
+  auto const default_value = schema["default"];
+  if (default_value.IsDefined()) {
+    out << ", " << default_value;
+  }
+  out << ")}";
 }
 
 void write_params(YAML::Node const& n, std::ostream& out) {

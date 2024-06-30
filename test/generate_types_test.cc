@@ -70,6 +70,7 @@ paths:
           in: query
           required: false
           schema:
+            default: [WALK, TRANSIT]
             type: array
             items:
               type: string
@@ -130,12 +131,19 @@ paths:
           schema:
             type: string
             enum: [asc, desc]
+            default: asc
 
         - in: query
           name: min
           schema:
             type: integer
             default: 0
+
+        - in: query
+          name: needle
+          schema:
+            type: string
+            default: "needle"
 )";
 
   constexpr auto const kExpected = R"_(
