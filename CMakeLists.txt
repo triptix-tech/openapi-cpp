@@ -7,7 +7,7 @@ file(GLOB_RECURSE openapi-src src/*.cc)
 add_library(openapi ${openapi-src})
 target_include_directories(openapi PUBLIC include)
 target_compile_features(openapi PUBLIC cxx_std_23)
-target_link_libraries(openapi PUBLIC utl boost-url yaml-cpp::yaml-cpp boost cista)
+target_link_libraries(openapi PUBLIC utl boost-url boost-json yaml-cpp::yaml-cpp boost cista)
 
 add_library(openapi-generated INTERFACE)
 file(GLOB_RECURSE openapi-test-files test/*.cc)

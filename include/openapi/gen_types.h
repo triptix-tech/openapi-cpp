@@ -90,6 +90,8 @@ bool gen_enum(std::string_view name,
       out << "\n  }\n";
       out << "}\n\n";
     }
+    // TODO
+    //{ out << to_cpp(type) << " to_string(" << }
     return true;
   }
   return false;
@@ -231,6 +233,36 @@ void write_types(YAML::Node const& n, std::ostream& out) {
       switch (type) {
         case type::kObject:
           out << "struct " << name << " {\n";
+
+          // JSON -> TYPE
+          out << "  friend " << name << " tag_invoke(boost::json::value_to_tag<"
+              << name
+              << ">, "
+                 "boost::json::value const& jv) {\n"
+                 "    auto v = "
+              << name << "{};\n";
+          for (auto const& p : schema["properties"]) {
+            auto const member_name = p.first.as<std::string_view>();
+            out << "    extract_member(jv.as_object(), v." << member_name
+                << ", \"" << member_name << "\");\n";
+          }
+          out << "    return v;\n"
+                 "  }\n\n";
+
+          // TYPE -> JSON
+          out << "  friend void tag_invoke(json::value_from_tag, json::value& "
+                 "jv, "
+              << name
+              << " const& v) {\n"
+                 "    auto& o = (jv = json::object{}).as_object();\n";
+          for (auto const& p : schema["properties"]) {
+            auto const member_name = p.first.as<std::string_view>();
+            out << "    write_member(o, v." << member_name << ", \""
+                << member_name << "\");\n";
+          }
+          out << "    return v;\n"
+                 "  }\n\n";
+
           for (auto const& p : schema["properties"]) {
             auto const member_name = p.first.as<std::string_view>();
             gen_member(member_name, is_required(member_name), p.second, out);
