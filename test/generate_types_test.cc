@@ -231,3 +231,43 @@ components:
   write_types(YAML::Load(kEnum), ss);
   EXPECT_EQ(kExpected, ss.str());
 }
+
+#include "boost/json.hpp"
+
+namespace json = boost::json;
+
+template <class T>
+void extract(json::object const& o, T& t, json::string_view key) {
+  t = json::value_to<T>(o.at(key));
+}
+
+template <class T>
+void extract(json::object const& o,
+             std::optional<T>& t,
+             json::string_view key) {
+  t = json::value_to<T>(o.at(key));
+}
+
+struct x {
+  friend x tag_invoke(json::value_to_tag<x>, json::value const& jv) {
+    x v;
+    auto const& obj = jv.as_object();
+    extract(obj, v.a_, "a");
+    extract(obj, v.b_, "b");
+    return v;
+  }
+
+  friend void tag_invoke(json::value_from_tag, json::value& jv, x const& v) {
+    jv = json::object{};
+    auto& o = jv.as_object();
+    o.emplace("a", v.a_);
+    if (v.b_.has_value()) {
+      o.emplace("b", *v.b_);
+    }
+  }
+
+  int a_;
+  std::optional<int> b_;
+};
+
+TEST(a, b) { auto const json = R"({"a": 5, "b": 5})"; }
