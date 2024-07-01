@@ -96,11 +96,22 @@ enum class mode {
   TRANSIT
 };
 
-void parse(std::string_view s, mode& x) {
-  switch (cista::hash(s)) {
+mode tag_invoke(boost::json::value_to_tag<mode>, boost::json::value const& jv) {
+  auto x = mode{};
+  switch (cista::hash(jv.as_string())) {
     case cista::hash("WALK"): x = mode::WALK; break;
     case cista::hash("TRANSIT"): x = mode::TRANSIT; break;
+    default: throw utl::fail("enum mode: unknown value {}", s);
   }
+  return x;
+}
+
+void tag_invoke(json::value_from_tag, json::value& jv, mode const v) {
+  switch (v) {
+    case mode::WALK: jv = "WALK"; break;
+    case mode::TRANSIT: jv = "TRANSIT"; break;
+  }
+  std::unreachable();
 }
 
 struct sort_params {
@@ -154,11 +165,22 @@ enum class sort {
   desc
 };
 
-void parse(std::string_view s, sort& x) {
-  switch (cista::hash(s)) {
+sort tag_invoke(boost::json::value_to_tag<sort>, boost::json::value const& jv) {
+  auto x = sort{};
+  switch (cista::hash(jv.as_string())) {
     case cista::hash("asc"): x = sort::asc; break;
     case cista::hash("desc"): x = sort::desc; break;
+    default: throw utl::fail("enum sort: unknown value {}", s);
   }
+  return x;
+}
+
+void tag_invoke(json::value_from_tag, json::value& jv, sort const v) {
+  switch (v) {
+    case sort::asc: jv = "asc"; break;
+    case sort::desc: jv = "desc"; break;
+  }
+  std::unreachable();
 }
 
 struct sort_params {

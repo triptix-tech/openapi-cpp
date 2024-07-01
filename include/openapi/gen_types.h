@@ -78,20 +78,36 @@ bool gen_enum(std::string_view name,
       out << "\n};\n\n";
     }
     {
-      out << "void parse(" << to_cpp(type) << " s" << ", " << name
-          << "& x) {\n";
-      out << "  switch (cista::hash(s)) {";
+      out << name << " tag_invoke(boost::json::value_to_tag<" << name
+          << ">, boost::json::value const& jv) {\n";
+      out << "  auto x = " << name << "{};\n";
+      out << "  switch (cista::hash(jv.as_string())) {";
       auto ind = indent{2, 0};
       for (auto const& e : enumera) {
         ind(out);
         out << "case cista::hash(\"" << e << "\"): x = " << name << "::" << e
             << "; break;";
       }
-      out << "\n  }\n";
+      ind(out);
+      out << "default: throw utl::fail(\"enum " << name
+          << ": unknown value {}\", s);\n";
+      out << "  }\n";
+      out << "  return x;\n";
       out << "}\n\n";
     }
-    // TODO
-    //{ out << to_cpp(type) << " to_string(" << }
+    {
+      out << "void tag_invoke(json::value_from_tag, json::value& jv, " << name
+          << " const v) {\n"
+             "  switch (v) {";
+      auto ind = indent{2, 0};
+      for (auto const& e : enumera) {
+        ind(out);
+        out << "case " << name << "::" << e << ": jv = \"" << e << "\"; break;";
+      }
+      out << "\n  }\n"
+             "  std::unreachable();\n"
+             "}\n\n";
+    }
     return true;
   }
   return false;

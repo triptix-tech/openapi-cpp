@@ -68,16 +68,14 @@ void tag_invoke(json::value_from_tag, json::value& jv, Status const v) {
 
 enum class Pets_enum { A, B };
 
-void parse(std::string_view s, Pets_enum& x) {
-  switch (cista::hash(s)) {
-    case cista::hash("A"): x = Pets_enum::A; break;
-    case cista::hash("B"): x = Pets_enum::B; break;
-  }
-}
+void parse(std::string_view s, Pets_enum& x) {}
 
 Pets_enum tag_invoke(json::value_to_tag<Pets_enum>, json::value const& jv) {
   auto x = Pets_enum{};
-  parse(jv.as_string(), x);
+  switch (cista::hash(jv.as_string())) {
+    case cista::hash("A"): x = Pets_enum::A; break;
+    case cista::hash("B"): x = Pets_enum::B; break;
+  }
   return x;
 }
 
@@ -112,3 +110,8 @@ struct Item {
   Pets y;
   std::optional<int> z;
 };
+
+TEST(a, b) {
+  auto const v = json::value{"A"};
+  json::value_to<Pets_enum>(v);
+}

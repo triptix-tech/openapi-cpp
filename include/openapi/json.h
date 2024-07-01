@@ -40,4 +40,13 @@ void write_member(json::object& o, T const& t, json::string_view key) {
   o.emplace(key, json::value_from(t));
 }
 
+template <typename T>
+concept Enum = std::is_scoped_enum_v<T>;
+
+template <Enum T>
+void parse(std::string_view s, T& x) {
+  auto const v = json::value{s};
+  x = json::value_to<T>(v);
+}
+
 }  // namespace openapi
