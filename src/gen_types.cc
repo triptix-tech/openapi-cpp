@@ -264,18 +264,19 @@ void gen_type(std::string_view name,
               YAML::Node const& schema,
               std::ostream& out) {
   auto const type = to_type(schema["type"].as<std::string_view>());
-  auto const required = schema["required"];
-  auto const is_required = [&](std::string_view name) {
-    if (!required.IsDefined()) {
-      return false;
-    }
-    for (auto const& x : required) {
-      if (x.as<std::string_view>() == name) {
-        return true;
-      }
-    }
-    return false;
-  };
+
+  auto const is_in_required_list =
+      [&, required = schema["required"]](std::string_view name) {
+        if (!required.IsDefined()) {
+          return false;
+        }
+        for (auto const& x : required) {
+          if (x.as<std::string_view>() == name) {
+            return true;
+          }
+        }
+        return false;
+      };
 
   if (gen_enum(name, schema, out)) {
     return;
@@ -329,7 +330,9 @@ void gen_type(std::string_view name,
 
       for (auto const& p : schema["properties"]) {
         auto const member_name = p.first.as<std::string_view>();
-        gen_member(root, member_name, is_required(member_name), p.second, out);
+        auto const required =
+            is_in_required_list(member_name) || is_required(p.second);
+        gen_member(root, member_name, required, p.second, out);
       }
       out << "};\n\n";
       break;
