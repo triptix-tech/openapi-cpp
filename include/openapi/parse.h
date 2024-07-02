@@ -43,10 +43,10 @@ template <typename T>
 T parse_param(boost::urls::url_view const& url,
               std::string_view name,
               std::optional<T> const& default_value = std::nullopt) {
-  auto v = default_value.has_value() ? T{*default_value} : T{};
   auto const params = url.params();
   auto const it = params.find(name);
   if (it != params.end()) {
+    auto v = T{};
     parse((*it).value, v);
     return v;
   } else {
@@ -56,7 +56,7 @@ T parse_param(boost::urls::url_view const& url,
       }
     }
   }
-  return v;
+  return default_value.has_value() ? T{*default_value} : T{};
 }
 
 }  // namespace openapi

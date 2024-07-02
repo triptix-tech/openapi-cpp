@@ -143,17 +143,27 @@ bool gen_enum(std::string_view type_name,
   return false;
 }
 
+std::string_view ref_name(YAML::Node const& ref) {
+  auto const prefix = std::string_view{"#/components/schemas/"};
+  auto const type = ref.as<std::string_view>().substr(prefix.size());
+  return type;
+}
+
+YAML::Node resolve_schema(YAML::Node const& root, YAML::Node const& schema) {
+  auto const ref = schema["$ref"];
+  return ref.IsDefined() ? root["components"]["schemas"][ref_name(ref)]
+                         : schema;
+}
+
 std::string get_type(YAML::Node const& root,
                      std::string_view name,
                      YAML::Node const& schema,
                      bool const required) {
   auto const ref = schema["$ref"];
   if (ref.IsDefined()) {
-    auto const prefix = std::string_view{"#/components/schemas/"};
-    auto const type = ref.as<std::string_view>().substr(prefix.size());
     auto const enum_postfix =
-        root["components"]["schemas"][type]["enum"].IsDefined() ? "Enum" : "";
-    return std::string{type} + "" + enum_postfix;
+        resolve_schema(root, schema)["enum"].IsDefined() ? "Enum" : "";
+    return std::string{ref_name(ref)} + enum_postfix;
   }
 
   auto const type = to_type(schema["type"].as<std::string_view>());
@@ -186,10 +196,16 @@ void gen_value(YAML::Node const& root,
                YAML::Node const& schema,
                YAML::Node const& default_value,
                std::ostream& out) {
+  if (auto const ref = schema["$ref"]; ref.IsDefined()) {
+    gen_value(root, ref_name(ref), resolve_schema(root, schema), default_value,
+              out);
+    return;
+  }
+
   auto const type = to_type(schema["type"].as<std::string_view>());
   auto const enumera = schema["enum"];
   if (enumera) {
-    out << name << "::" << default_value;
+    out << name << "Enum::" << default_value;
     return;
   }
   switch (type) {
@@ -256,7 +272,7 @@ void write_params(YAML::Node const& root,
     auto const name = p["name"].as<std::string_view>();
     gen_member(root, name, is_required(p), p["schema"], out);
   }
-  out << "};\n";
+  out << "};\n\n";
 }
 
 void gen_type(std::string_view name,
