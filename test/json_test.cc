@@ -83,8 +83,8 @@ void tag_invoke(json::value_from_tag, json::value& jv, Pets_enum const v) {
   switch (v) {
     case Pets_enum::A: jv = "A"; break;
     case Pets_enum::B: jv = "B"; break;
+    default: std::unreachable();
   }
-  std::unreachable();
 }
 
 using Pets = std::vector<Pets_enum>;
