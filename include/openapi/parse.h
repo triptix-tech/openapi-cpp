@@ -17,8 +17,8 @@ template <typename T>
 constexpr auto const is_optional_v = is_optional<T>::value;
 
 template <class T>
-concept Primitive = std::is_same_v<T, int> || std::is_same_v<T, double> ||
-                    std::is_same_v<T, bool>;
+concept Primitive = std::is_same_v<T, std::int64_t> ||
+                    std::is_same_v<T, double> || std::is_same_v<T, bool>;
 
 template <Primitive T>
 void parse(std::string_view s, T& v) {
