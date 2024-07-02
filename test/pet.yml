@@ -1,0 +1,41 @@
+paths:
+  /items:
+    get:
+      operationId: getItems
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+
+components:
+  schemas:
+    Status:
+      type: string
+      enum:
+        - ON
+        - OFF
+
+    Pets:
+      type: array
+      items:
+        type: string
+        enum:
+          - A
+          - B
+
+    Item:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          $ref: '#/components/schemas/Status'
+        y:
+          $ref: '#/components/schemas/Pets'
+        z:
+          type: integer

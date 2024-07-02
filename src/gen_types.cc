@@ -87,7 +87,8 @@ bool gen_enum(std::string_view type_name,
       out << "}\n\n";
     }
     {
-      out << "inline void tag_invoke(json::value_from_tag, json::value& jv, "
+      out << "inline void tag_invoke(boost::json::value_from_tag, "
+             "boost::json::value& jv, "
           << name
           << " const v) {\n"
              "  switch (v) {";
@@ -255,6 +256,10 @@ void write_types(YAML::Node const& root, std::ostream& out) {
         case type::kObject:
           out << "struct " << name << " {\n";
 
+          out << "\n"
+                 "  friend bool operator<=>("
+              << name << " const&, " << name << " const&) = default;\n\n";
+
           // JSON -> TYPE
           out << "  friend " << name << " tag_invoke(boost::json::value_to_tag<"
               << name
@@ -264,8 +269,8 @@ void write_types(YAML::Node const& root, std::ostream& out) {
               << name << "{};\n";
           for (auto const& p : schema["properties"]) {
             auto const member_name = p.first.as<std::string_view>();
-            out << "    extract_member(jv.as_object(), v." << member_name
-                << "_, \"" << member_name << "\");\n";
+            out << "    openapi::extract_member(jv.as_object(), v."
+                << member_name << "_, \"" << member_name << "\");\n";
           }
           out << "    return v;\n"
                  "  }\n\n";
@@ -276,10 +281,10 @@ void write_types(YAML::Node const& root, std::ostream& out) {
                  "jv, "
               << name
               << " const& v) {\n"
-                 "    auto& o = (jv = json::object{}).as_object();\n";
+                 "    auto& o = (jv = boost::json::object{}).as_object();\n";
           for (auto const& p : schema["properties"]) {
             auto const member_name = p.first.as<std::string_view>();
-            out << "    write_member(o, v." << member_name << "_, \""
+            out << "    openapi::write_member(o, v." << member_name << "_, \""
                 << member_name << "\");\n";
           }
           out << "  }\n\n";

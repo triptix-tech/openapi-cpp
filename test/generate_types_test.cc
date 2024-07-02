@@ -91,36 +91,37 @@ paths:
 )";
 
   constexpr auto const kExpected = R"(
-enum class mode {
+enum class mode_enum {
   WALK,
   TRANSIT
 };
 
-mode tag_invoke(boost::json::value_to_tag<mode>, boost::json::value const& jv) {
-  auto x = mode{};
-  switch (cista::hash(jv.as_string())) {
-    case cista::hash("WALK"): x = mode::WALK; break;
-    case cista::hash("TRANSIT"): x = mode::TRANSIT; break;
-    default: throw utl::fail("enum mode: unknown value {}", s);
+inline mode_enum tag_invoke(boost::json::value_to_tag<mode_enum>, boost::json::value const& jv) {
+  auto x = mode_enum{};
+  auto const sv = std::string_view{jv.as_string()};
+  switch (cista::hash(sv)) {
+    case cista::hash("WALK"): x = mode_enum::WALK; break;
+    case cista::hash("TRANSIT"): x = mode_enum::TRANSIT; break;
+    default: throw utl::fail("enum mode_enum: unknown value {}", sv);
   }
   return x;
 }
 
-void tag_invoke(json::value_from_tag, json::value& jv, mode const v) {
+inline void tag_invoke(boost::json::value_from_tag, boost::json::value& jv, mode_enum const v) {
   switch (v) {
-    case mode::WALK: jv = "WALK"; break;
-    case mode::TRANSIT: jv = "TRANSIT"; break;
+    case mode_enum::WALK: jv = "WALK"; break;
+    case mode_enum::TRANSIT: jv = "TRANSIT"; break;
+    default: std::unreachable();
   }
-  std::unreachable();
 }
 
 struct sort_params {
   explicit sort_params(boost::urls::url_view const& url) :
-      mode_{::openapi::parse_param<std::vector<mode>>(url, "mode", std::vector<mode>{mode::WALK,mode::TRANSIT})},
+      mode_{::openapi::parse_param<std::vector<mode_enum>>(url, "mode", std::vector<mode_enum>{mode::WALK,mode::TRANSIT})},
       min_{::openapi::parse_param<int>(url, "min")}
   {}
 
-  std::vector<mode> mode_;
+  std::vector<mode_enum> mode_;
   int min_;
 };
 )";
@@ -160,37 +161,38 @@ paths:
 )";
 
   constexpr auto const kExpected = R"_(
-enum class sort {
+enum class sort_enum {
   asc,
   desc
 };
 
-sort tag_invoke(boost::json::value_to_tag<sort>, boost::json::value const& jv) {
-  auto x = sort{};
-  switch (cista::hash(jv.as_string())) {
-    case cista::hash("asc"): x = sort::asc; break;
-    case cista::hash("desc"): x = sort::desc; break;
-    default: throw utl::fail("enum sort: unknown value {}", s);
+inline sort_enum tag_invoke(boost::json::value_to_tag<sort_enum>, boost::json::value const& jv) {
+  auto x = sort_enum{};
+  auto const sv = std::string_view{jv.as_string()};
+  switch (cista::hash(sv)) {
+    case cista::hash("asc"): x = sort_enum::asc; break;
+    case cista::hash("desc"): x = sort_enum::desc; break;
+    default: throw utl::fail("enum sort_enum: unknown value {}", sv);
   }
   return x;
 }
 
-void tag_invoke(json::value_from_tag, json::value& jv, sort const v) {
+inline void tag_invoke(boost::json::value_from_tag, boost::json::value& jv, sort_enum const v) {
   switch (v) {
-    case sort::asc: jv = "asc"; break;
-    case sort::desc: jv = "desc"; break;
+    case sort_enum::asc: jv = "asc"; break;
+    case sort_enum::desc: jv = "desc"; break;
+    default: std::unreachable();
   }
-  std::unreachable();
 }
 
 struct sort_params {
   explicit sort_params(boost::urls::url_view const& url) :
-      sort_{::openapi::parse_param<sort>(url, "sort", sort::asc)},
+      sort_{::openapi::parse_param<sort_enum>(url, "sort", sort::asc)},
       min_{::openapi::parse_param<int>(url, "min", 0)},
       needle_{::openapi::parse_param<std::string_view>(url, "needle", "needle")}
   {}
 
-  sort sort_;
+  sort_enum sort_;
   int min_;
   std::string_view needle_;
 };

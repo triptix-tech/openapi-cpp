@@ -62,8 +62,8 @@ void tag_invoke(json::value_from_tag, json::value& jv, Status const v) {
   switch (v) {
     case Status::ON: jv = "ON"; break;
     case Status::OFF: jv = "OFF"; break;
+    default: std::unreachable();
   }
-  std::unreachable();
 }
 
 enum class Pets_enum { A, B };
@@ -110,8 +110,3 @@ struct Item {
   Pets y;
   std::optional<int> z;
 };
-
-TEST(a, b) {
-  auto const v = json::value{"A"};
-  json::value_to<Pets_enum>(v);
-}
