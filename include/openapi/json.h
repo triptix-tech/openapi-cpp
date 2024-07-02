@@ -49,4 +49,6 @@ void parse(std::string_view s, T& x) {
   x = json::value_to<T>(v);
 }
 
+inline void parse(std::string_view s, std::string_view& x) { x = s; }
+
 }  // namespace openapi

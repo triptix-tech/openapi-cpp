@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <ostream>
 #include <string_view>
 
@@ -46,6 +47,8 @@ void gen_member_init(YAML::Node const& root,
 
 void write_params(YAML::Node const& root, YAML::Node const&, std::ostream&);
 
-void write_types(YAML::Node const&, std::ostream&);
+void write_types(YAML::Node const&,
+                 std::ostream&,
+                 std::optional<std::string_view>);
 
 }  // namespace openapi

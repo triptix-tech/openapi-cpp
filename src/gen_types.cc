@@ -1,8 +1,39 @@
 #include "openapi/gen_types.h"
 
+#include <optional>
 #include <ostream>
 
 namespace openapi {
+
+void write_prelude(std::ostream& out, std::optional<std::string_view> ns) {
+  constexpr auto const prelude = R"(#pragma once
+
+#include <optional>
+#include <string_view>
+
+#include "boost/url.hpp"
+#include "boost/json.hpp"
+
+#include "cista/hash.h"
+#include "cista/reflection/comparable.h"
+
+#include "utl/verify.h"
+
+#include "openapi/json.h"
+#include "openapi/parse.h"
+
+)";
+  out << prelude;
+  if (ns.has_value()) {
+    out << "namespace " << *ns << " {\n\n";
+  }
+}
+
+void write_postlude(std::ostream& out, std::optional<std::string_view> ns) {
+  if (ns.has_value()) {
+    out << "\n}  // namespace " << *ns << "\n";
+  }
+}
 
 type to_type(std::string_view s) {
   switch (cista::hash(s)) {
@@ -222,7 +253,11 @@ void write_params(YAML::Node const& root,
   out << "};\n";
 }
 
-void write_types(YAML::Node const& root, std::ostream& out) {
+void write_types(YAML::Node const& root,
+                 std::ostream& out,
+                 std::optional<std::string_view> ns) {
+  write_prelude(out, ns);
+
   for (auto const& path : root["paths"]) {
     for (auto const& method : path.second) {
       write_params(root, method.second, out);
@@ -256,13 +291,11 @@ void write_types(YAML::Node const& root, std::ostream& out) {
         case type::kObject:
           out << "struct " << name << " {\n";
 
-          out << "\n"
-                 "  friend bool operator<=>("
-              << name << " const&, " << name << " const&) = default;\n\n";
+          out << "  CISTA_FRIEND_COMPARABLE(" << name << ")\n\n";
 
           // JSON -> TYPE
-          out << "  friend " << name << " tag_invoke(boost::json::value_to_tag<"
-              << name
+          out << "  inline friend " << name
+              << " tag_invoke(boost::json::value_to_tag<" << name
               << ">, "
                  "boost::json::value const& jv) {\n"
                  "    auto v = "
@@ -276,7 +309,7 @@ void write_types(YAML::Node const& root, std::ostream& out) {
                  "  }\n\n";
 
           // TYPE -> JSON
-          out << "  friend void tag_invoke(boost::json::value_from_tag, "
+          out << "  inline friend void tag_invoke(boost::json::value_from_tag, "
                  "boost::json::value& "
                  "jv, "
               << name
@@ -308,6 +341,8 @@ void write_types(YAML::Node const& root, std::ostream& out) {
       }
     }
   }
+
+  write_postlude(out, ns);
 }
 
 }  // namespace openapi
