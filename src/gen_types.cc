@@ -210,10 +210,11 @@ void gen_value(YAML::Node const& root,
 
 void gen_member_init(YAML::Node const& root,
                      YAML::Node const& x,
+                     bool const is_required,
                      std::ostream& out) {
   auto const schema = x["schema"];
   auto const name = x["name"].as<std::string_view>();
-  auto const type = get_type(root, name, schema);
+  auto const type = get_type(root, name, schema, is_required);
   out << "  " << name << "_{::openapi::parse_param<" << type << ">(url, \""
       << name << "\"";
   auto const default_value = schema["default"];
@@ -247,7 +248,7 @@ void write_params(YAML::Node const& root,
     auto ind = indent{2};
     for (auto const& p : parameters) {
       ind(out);
-      gen_member_init(root, p, out);
+      gen_member_init(root, p, is_required(p), out);
     }
   }
   out << "\n  {}\n\n";

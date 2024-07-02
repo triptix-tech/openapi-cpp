@@ -43,6 +43,7 @@ void gen_value(YAML::Node const& root,
 
 void gen_member_init(YAML::Node const& root,
                      YAML::Node const& x,
+                     bool is_required,
                      std::ostream&);
 
 void write_params(YAML::Node const& root, YAML::Node const&, std::ostream&);
