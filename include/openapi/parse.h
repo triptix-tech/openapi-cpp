@@ -17,8 +17,9 @@ template <typename T>
 constexpr auto const is_optional_v = is_optional<T>::value;
 
 template <class T>
-concept Primitive = std::is_same_v<T, std::int64_t> ||
-                    std::is_same_v<T, double> || std::is_same_v<T, bool>;
+concept Primitive =
+    std::is_same_v<T, std::int64_t> || std::is_same_v<T, double> ||
+    std::is_same_v<T, bool> || std::is_same_v<T, std::string>;
 
 template <Primitive T>
 void parse(std::string_view s, T& v) {
@@ -40,10 +41,9 @@ void parse(std::string_view s, std::optional<T>& v) {
 }
 
 template <typename T>
-T parse_param(boost::urls::url_view const& url,
+T parse_param(boost::urls::params_view const& params,
               std::string_view name,
               std::optional<T> const& default_value = std::nullopt) {
-  auto const params = url.params();
   auto const it = params.find(name);
   if (it != params.end()) {
     auto v = T{};

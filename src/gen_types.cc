@@ -53,7 +53,7 @@ std::string_view to_cpp(type const t) {
   switch (t) {
     case type::kInteger: return "std::int64_t";
     case type::kNumber: return "double";
-    case type::kString: return "std::string_view";
+    case type::kString: return "std::string";
     case type::kBoolean: return "bool";
     case type::kArray: return "std::vector";
     case type::kObject: return "std::map<std::string, std::string>";
@@ -231,7 +231,7 @@ void gen_member_init(YAML::Node const& root,
   auto const schema = x["schema"];
   auto const name = x["name"].as<std::string_view>();
   auto const type = get_type(root, name, schema, is_required);
-  out << "  " << name << "_{::openapi::parse_param<" << type << ">(url, \""
+  out << "  " << name << "_{::openapi::parse_param<" << type << ">(params, \""
       << name << "\"";
   auto const default_value = schema["default"];
   if (default_value.IsDefined()) {
@@ -256,7 +256,7 @@ void write_params(YAML::Node const& root,
 
   out << "struct " << n["operationId"] << "_params {\n";
   out << "  explicit " << n["operationId"]
-      << "_params(boost::urls::url_view const& url)";
+      << "_params(boost::urls::params_view const& params)";
 
   auto const parameters = n["parameters"];
   if (parameters.IsDefined() && parameters.size() != 0) {
