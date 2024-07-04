@@ -188,7 +188,7 @@ void gen_member(YAML::Node const& root,
                 YAML::Node const& schema,
                 std::ostream& out) {
   out << "  " << get_type(root, name, schema, required) << " " << name
-      << "_;\n";
+      << "_{};\n";
 }
 
 void gen_value(YAML::Node const& root,
