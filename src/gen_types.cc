@@ -131,12 +131,14 @@ bool gen_enum(std::string_view type_name,
       auto ind = indent{2, 0};
       for (auto const& e : enumera) {
         ind(out);
-        out << "case " << name << "::" << e << ": jv = \"" << e << "\"; break;";
+        out << "case " << name << "::" << e << ": jv = \"" << e
+            << "\"; return;";
       }
       ind(out);
-      out << "default: std::unreachable();\n";
-      out << "  }\n"
-             "}\n\n";
+      out << "}\n";
+      out << "  throw utl::fail(\"invalid " << name
+          << " value {}\", static_cast<int>(v));\n"
+          << "}\n\n";
     }
     return true;
   }

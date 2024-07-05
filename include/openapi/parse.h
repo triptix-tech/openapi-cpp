@@ -14,7 +14,7 @@ template <typename T>
 struct is_optional<std::optional<T>> : std::true_type {};
 
 template <typename T>
-constexpr auto const is_optional_v = is_optional<T>::value;
+constexpr inline auto const is_optional_v = is_optional<T>::value;
 
 template <class T>
 concept Primitive =
@@ -29,8 +29,8 @@ void parse(std::string_view s, T& v) {
 
 template <typename T>
 void parse(std::string_view s, std::vector<T>& v) {
-  utl::for_each_token(s, ',',
-                      [&](auto&& s) { parse(s.view(), v.emplace_back()); });
+  utl::for_each_token(
+      s, ',', [&](auto&& token) { parse(token.view(), v.emplace_back()); });
 }
 
 template <typename T>
