@@ -5,8 +5,11 @@
 
 namespace openapi {
 
-void write_prelude(std::ostream& out, std::optional<std::string_view> ns) {
-  constexpr auto const prelude = R"(#pragma once
+void write_prelude(std::string_view path_to_header,
+                   std::ostream& header,
+                   std::ostream& source,
+                   std::optional<std::string_view> ns) {
+  header << R"(#pragma once
 
 #include <optional>
 #include <string_view>
@@ -14,10 +17,15 @@ void write_prelude(std::ostream& out, std::optional<std::string_view> ns) {
 #include <string>
 
 #include "boost/url.hpp"
-#include "boost/json.hpp"
+#include "boost/json/fwd.hpp"
 
+)";
+
+  source << R"(#include ")" << path_to_header << "\"\n";
+  source << R"(
 #include "cista/hash.h"
-#include "cista/reflection/comparable.h"
+
+#include "boost/json.hpp"
 
 #include "utl/verify.h"
 
@@ -25,15 +33,19 @@ void write_prelude(std::ostream& out, std::optional<std::string_view> ns) {
 #include "openapi/parse.h"
 
 )";
-  out << prelude;
+
   if (ns.has_value()) {
-    out << "namespace " << *ns << " {\n\n";
+    header << "namespace " << *ns << " {\n\n";
+    source << "namespace " << *ns << " {\n\n";
   }
 }
 
-void write_postlude(std::ostream& out, std::optional<std::string_view> ns) {
+void write_postlude(std::ostream& header,
+                    std::ostream& source,
+                    std::optional<std::string_view> ns) {
   if (ns.has_value()) {
-    out << "\n}  // namespace " << *ns << "\n";
+    header << "\n}  // namespace " << *ns << "\n";
+    source << "\n}  // namespace " << *ns << "\n";
   }
 }
 
@@ -86,7 +98,8 @@ struct indent {
 
 bool gen_enum(std::string_view type_name,
               YAML::Node const& schema,
-              std::ostream& out) {
+              std::ostream& header,
+              std::ostream& source) {
   if (schema["$ref"].IsDefined()) {
     return false;
   }
@@ -95,50 +108,59 @@ bool gen_enum(std::string_view type_name,
   auto const enumera = schema["enum"];
   if (enumera.IsDefined()) {
     {
-      out << "enum class " << name << " {";
+      header << "enum class " << name << " {";
       auto ind = indent{1};
       for (auto const& e : enumera) {
-        ind(out);
-        out << e;
+        ind(header);
+        header << e;
       }
-      out << "\n};\n\n";
+      header << "\n};\n\n";
     }
+
     {
-      out << "inline " << name << " tag_invoke(boost::json::value_to_tag<"
-          << name << ">, boost::json::value const& jv) {\n";
-      out << "  auto x = " << name << "{};\n";
-      out << "  auto const sv = std::string_view{jv.as_string()};\n";
-      out << "  switch (cista::hash(sv)) {";
+      header << name << " tag_invoke(boost::json::value_to_tag<" << name
+             << ">, boost::json::value const&);\n";
+
+      source << name << " tag_invoke(boost::json::value_to_tag<" << name
+             << ">, boost::json::value const& jv) {\n";
+      source << "  auto x = " << name << "{};\n";
+      source << "  auto const sv = std::string_view{jv.as_string()};\n";
+      source << "  switch (cista::hash(sv)) {";
       auto ind = indent{2, 0};
       for (auto const& e : enumera) {
-        ind(out);
-        out << "case cista::hash(\"" << e << "\"): x = " << name << "::" << e
-            << "; break;";
+        ind(source);
+        source << "case cista::hash(\"" << e << "\"): x = " << name << "::" << e
+               << "; break;";
       }
-      ind(out);
-      out << "default: throw utl::fail(\"enum " << name
-          << ": unknown value {}\", sv);\n";
-      out << "  }\n";
-      out << "  return x;\n";
-      out << "}\n\n";
+      ind(source);
+      source << "default: throw utl::fail(\"enum " << name
+             << ": unknown value {}\", sv);\n";
+      source << "  }\n";
+      source << "  return x;\n";
+      source << "}\n\n";
     }
+
     {
-      out << "inline void tag_invoke(boost::json::value_from_tag, "
-             "boost::json::value& jv, "
-          << name
-          << " const v) {\n"
-             "  switch (v) {";
+      header << "void tag_invoke(boost::json::value_from_tag, "
+                "boost::json::value&, "
+             << name << ");\n";
+
+      source << "void tag_invoke(boost::json::value_from_tag, "
+                "boost::json::value& jv, "
+             << name
+             << " const v) {\n"
+                "  switch (v) {";
       auto ind = indent{2, 0};
       for (auto const& e : enumera) {
-        ind(out);
-        out << "case " << name << "::" << e << ": jv = \"" << e
-            << "\"; return;";
+        ind(source);
+        source << "case " << name << "::" << e << ": jv = \"" << e
+               << "\"; return;";
       }
-      ind(out);
-      out << "}\n";
-      out << "  throw utl::fail(\"invalid " << name
-          << " value {}\", static_cast<int>(v));\n"
-          << "}\n\n";
+      ind(source);
+      source << "}\n";
+      source << "  throw utl::fail(\"invalid " << name
+             << " value {}\", static_cast<int>(v));\n"
+             << "}\n\n";
     }
     return true;
   }
@@ -245,42 +267,47 @@ void gen_member_init(YAML::Node const& root,
 
 void write_params(YAML::Node const& root,
                   YAML::Node const& n,
-                  std::ostream& out) {
+                  std::ostream& header,
+                  std::ostream& source) {
   for (auto const& p : n["parameters"]) {
     auto const name = p["name"].as<std::string_view>();
     auto const items = p["schema"]["items"];
     if (items.IsDefined()) {
-      gen_enum(name, items, out);
+      gen_enum(name, items, header, source);
     } else {
-      gen_enum(name, p["schema"], out);
+      gen_enum(name, p["schema"], header, source);
     }
   }
 
-  out << "struct " << n["operationId"] << "_params {\n";
-  out << "  explicit " << n["operationId"]
-      << "_params(boost::urls::params_view const& params)";
+  auto const id = n["operationId"].as<std::string>() + "_params";
+
+  header << "struct " << id << " {\n";
+  header << "  explicit " << id << "(boost::urls::params_view const&);\n";
+
+  source << id << "::" << id << "(boost::urls::params_view const& params)";
 
   auto const parameters = n["parameters"];
   if (parameters.IsDefined() && parameters.size() != 0) {
-    out << " :";
+    source << " :";
     auto ind = indent{2};
     for (auto const& p : parameters) {
-      ind(out);
-      gen_member_init(root, p, is_required(p), out);
+      ind(source);
+      gen_member_init(root, p, is_required(p), source);
     }
   }
-  out << "\n  {}\n\n";
+  source << "\n  {}\n\n";
   for (auto const& p : n["parameters"]) {
     auto const name = p["name"].as<std::string_view>();
-    gen_member(root, name, is_required(p), p["schema"], out);
+    gen_member(root, name, is_required(p), p["schema"], header);
   }
-  out << "};\n\n";
+  header << "};\n\n";
 }
 
 void gen_type(std::string_view name,
               YAML::Node const& root,
               YAML::Node const& schema,
-              std::ostream& out) {
+              std::ostream& header,
+              std::ostream& source) {
   auto const type = to_type(schema["type"].as<std::string_view>());
 
   auto const is_in_required_list =
@@ -296,7 +323,7 @@ void gen_type(std::string_view name,
         return false;
       };
 
-  if (gen_enum(name, schema, out)) {
+  if (gen_enum(name, schema, header, source)) {
     return;
   }
 
@@ -305,92 +332,123 @@ void gen_type(std::string_view name,
     auto const& prop_schema = p.second;
     auto const& items = schema["items"];
     if (items.IsDefined()) {
-      gen_enum(prop_name, items, out);
+      gen_enum(prop_name, items, header, source);
     } else {
-      gen_enum(prop_name, prop_schema, out);
+      gen_enum(prop_name, prop_schema, header, source);
     }
   }
 
   switch (type) {
     case type::kObject:
-      out << "struct " << name << " {\n";
+      header << "struct " << name << " {\n";
 
-      out << "  CISTA_FRIEND_COMPARABLE(" << name << ")\n\n";
+      header << fmt::format(R"(
+  friend auto operator<=>({} const&, {} const&);
+  friend bool operator==({} const&, {} const&);
+  friend bool operator!=({} const&, {} const&);
+  friend bool operator<({} const&, {} const&);
+  friend bool operator<=({} const&, {} const&);
+  friend bool operator>({} const&, {} const&);
+  friend bool operator>=({} const&, {} const&);
+)",
+                            name, name, name, name, name, name, name, name,
+                            name, name, name, name, name, name);
+
+      source << fmt::format(R"(
+auto operator<=>({} const&, {} const&) = default;
+bool operator==({} const&, {} const&) = default;
+bool operator!=({} const&, {} const&) = default;
+bool operator<({} const&, {} const&) = default;
+bool operator<=({} const&, {} const&) = default;
+bool operator>({} const&, {} const&) = default;
+bool operator>=({} const&, {} const&) = default;
+)",
+                            name, name, name, name, name, name, name, name,
+                            name, name, name, name, name, name);
 
       // JSON -> TYPE
-      out << "  inline friend " << name
-          << " tag_invoke(boost::json::value_to_tag<" << name
-          << ">, "
-             "boost::json::value const& jv) {\n"
-             "    auto v = "
-          << name << "{};\n";
+      header << "  friend " << name << " tag_invoke(boost::json::value_to_tag<"
+             << name << ">, boost::json::value const&);\n";
+
+      source << name << " tag_invoke(boost::json::value_to_tag<" << name
+             << ">, "
+                "boost::json::value const& jv) {\n"
+                "    auto v = "
+             << name << "{};\n";
       for (auto const& p : schema["properties"]) {
         auto const member_name = p.first.as<std::string_view>();
-        out << "    openapi::extract_member(jv.as_object(), v." << member_name
-            << "_, \"" << member_name << "\");\n";
+        source << "    openapi::extract_member(jv.as_object(), v."
+               << member_name << "_, \"" << member_name << "\");\n";
       }
-      out << "    return v;\n"
-             "  }\n\n";
+      source << "    return v;\n"
+                "  }\n\n";
 
       // TYPE -> JSON
-      out << "  inline friend void tag_invoke(boost::json::value_from_tag, "
-             "boost::json::value& "
-             "jv, "
-          << name
-          << " const& v) {\n"
-             "    auto& o = (jv = boost::json::object{}).as_object();\n";
+      header << "  friend void tag_invoke(boost::json::value_from_tag, "
+                "boost::json::value& "
+                "jv, "
+             << name << " const& v);\n\n";
+
+      source << "void tag_invoke(boost::json::value_from_tag, "
+                "boost::json::value& "
+                "jv, "
+             << name
+             << " const& v) {\n"
+                "    auto& o = (jv = boost::json::object{}).as_object();\n";
       for (auto const& p : schema["properties"]) {
         auto const member_name = p.first.as<std::string_view>();
-        out << "    openapi::write_member(o, v." << member_name << "_, \""
-            << member_name << "\");\n";
+        source << "    openapi::write_member(o, v." << member_name << "_, \""
+               << member_name << "\");\n";
       }
-      out << "  }\n\n";
+      source << "  }\n\n";
 
       for (auto const& p : schema["properties"]) {
         auto const member_name = p.first.as<std::string_view>();
         auto const required =
             is_in_required_list(member_name) || is_required(p.second);
-        gen_member(root, member_name, required, p.second, out);
+        gen_member(root, member_name, required, p.second, header);
       }
-      out << "};\n\n";
+      header << "};\n\n";
       break;
 
     case type::kArray:
-      gen_enum(std::string{name}, schema["items"], out);
+      gen_enum(std::string{name}, schema["items"], header, source);
       [[fallthrough]];
 
     default:
-      out << "using " << name << " = " << get_type(root, name, schema)
-          << ";\n\n";
+      header << "using " << name << " = " << get_type(root, name, schema)
+             << ";\n\n";
       break;
   }
 }
 
 void write_types(YAML::Node const& root,
-                 std::ostream& out,
+                 std::string_view path_to_header,
+                 std::ostream& header,
+                 std::ostream& source,
                  std::optional<std::string_view> ns) {
-  write_prelude(out, ns);
+  write_prelude(path_to_header, header, source, ns);
 
   auto const components = root["components"];
   if (components.IsDefined()) {
     for (auto const& c : components["schemas"]) {
-      gen_type(c.first.as<std::string_view>(), root, c.second, out);
+      gen_type(c.first.as<std::string_view>(), root, c.second, header, source);
     }
   }
 
   for (auto const& path : root["paths"]) {
     for (auto const& method : path.second) {
-      write_params(root, method.second, out);
+      write_params(root, method.second, header, source);
 
       for (auto const& response : method.second["responses"]) {
         gen_type(method.second["operationId"].as<std::string>() + "_response",
                  root, response.second["content"]["application/json"]["schema"],
-                 out);
+                 header, source);
       }
     }
   }
 
-  write_postlude(out, ns);
+  write_postlude(header, source, ns);
 }
 
 }  // namespace openapi

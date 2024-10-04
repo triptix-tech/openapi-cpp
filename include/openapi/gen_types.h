@@ -33,23 +33,31 @@ void gen_member(YAML::Node const& root,
                 std::string_view name,
                 bool required,
                 YAML::Node const& schema,
-                std::ostream&);
+                std::ostream& header,
+                std::ostream& source);
 
 void gen_value(YAML::Node const& root,
                std::string_view name,
                YAML::Node const& schema,
                YAML::Node const& default_value,
-               std::ostream&);
+               std::ostream& header,
+               std::ostream& source);
 
 void gen_member_init(YAML::Node const& root,
                      YAML::Node const& x,
                      bool is_required,
-                     std::ostream&);
+                     std::ostream& header,
+                     std::ostream& source);
 
-void write_params(YAML::Node const& root, YAML::Node const&, std::ostream&);
+void write_params(YAML::Node const& root,
+                  YAML::Node const&,
+                  std::ostream& header,
+                  std::ostream& source);
 
 void write_types(YAML::Node const&,
-                 std::ostream&,
-                 std::optional<std::string_view>);
+                 std::string_view path_to_header,
+                 std::ostream& header,
+                 std::ostream& source,
+                 std::optional<std::string_view> ns);
 
 }  // namespace openapi

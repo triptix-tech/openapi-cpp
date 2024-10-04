@@ -19,17 +19,19 @@ function(openapi_generate openapi-file lib ns)
                 openapi-generate
                     ${CMAKE_CURRENT_SOURCE_DIR}/${openapi-file}
                     ${CMAKE_CURRENT_BINARY_DIR}/${lib}/${lib}.h
+                    ${CMAKE_CURRENT_BINARY_DIR}/${lib}/${lib}.cc
                     ${ns}
             DEPENDS
                 openapi-generate
                 ${CMAKE_CURRENT_SOURCE_DIR}/${openapi-file}
             OUTPUT
                 ${CMAKE_CURRENT_BINARY_DIR}/${lib}/${lib}.h
+                ${CMAKE_CURRENT_BINARY_DIR}/${lib}/${lib}.cc
     )
-    add_library(${lib} INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/${lib}/${lib}.h)
-    target_include_directories(${lib} INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
-    target_link_libraries(${lib} INTERFACE openapi)
-    target_compile_features(${lib} INTERFACE cxx_std_23)
+    add_library(${lib} ${CMAKE_CURRENT_BINARY_DIR}/${lib}/${lib}.cc)
+    target_include_directories(${lib} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+    target_link_libraries(${lib} openapi)
+    target_compile_features(${lib} PUBLIC cxx_std_23)
     set_target_properties(${lib} PROPERTIES CXX_CLANG_TIDY "")
 endfunction()
 
