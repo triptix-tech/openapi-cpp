@@ -343,25 +343,25 @@ void gen_type(std::string_view name,
       header << "struct " << name << " {\n";
 
       header << fmt::format(R"(
-  friend auto operator<=>({} const&, {} const&);
-  friend bool operator==({} const&, {} const&);
-  friend bool operator!=({} const&, {} const&);
-  friend bool operator<({} const&, {} const&);
-  friend bool operator<=({} const&, {} const&);
-  friend bool operator>({} const&, {} const&);
-  friend bool operator>=({} const&, {} const&);
+  auto operator<=>({} const&) const;
+  bool operator==({} const&) const;
+  bool operator!=({} const&) const;
+  bool operator<({} const&) const;
+  bool operator<=({} const&) const;
+  bool operator>({} const&) const;
+  bool operator>=({} const&) const;
 )",
                             name, name, name, name, name, name, name, name,
                             name, name, name, name, name, name);
 
       source << fmt::format(R"(
-auto operator<=>({} const&, {} const&) = default;
-bool operator==({} const&, {} const&) = default;
-bool operator!=({} const&, {} const&) = default;
-bool operator<({} const&, {} const&) = default;
-bool operator<=({} const&, {} const&) = default;
-bool operator>({} const&, {} const&) = default;
-bool operator>=({} const&, {} const&) = default;
+auto {}::operator<=>({} const&) const = default;
+bool {}::operator==({} const&) const = default;
+bool {}::operator!=({} const&) const = default;
+bool {}::operator<({} const&) const = default;
+bool {}::operator<=({} const&) const = default;
+bool {}::operator>({} const&) const = default;
+bool {}::operator>=({} const&) const = default;
 )",
                             name, name, name, name, name, name, name, name,
                             name, name, name, name, name, name);
