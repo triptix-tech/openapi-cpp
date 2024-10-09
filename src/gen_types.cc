@@ -308,6 +308,10 @@ void gen_type(std::string_view name,
               YAML::Node const& schema,
               std::ostream& header,
               std::ostream& source) {
+  if (schema["$ref"].IsDefined()) {
+    return;
+  }
+
   auto const type = to_type(schema["type"].as<std::string_view>());
 
   auto const is_in_required_list =
