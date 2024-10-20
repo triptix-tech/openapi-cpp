@@ -16,6 +16,8 @@ struct offset_time {
 
   operator std::chrono::sys_seconds() const { return time_; }
   std::chrono::sys_seconds operator*() const { return time_; }
+  std::chrono::sys_seconds* operator->() { return &time_; }
+  std::chrono::sys_seconds const* operator->() const { return &time_; }
 
   auto operator<=>(offset_time const&) const = default;
 
