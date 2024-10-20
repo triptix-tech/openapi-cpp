@@ -14,7 +14,15 @@
 
 namespace openapi {
 
-enum class type { kBoolean, kInteger, kNumber, kString, kArray, kObject };
+enum class type {
+  kBoolean,
+  kInteger,
+  kNumber,
+  kString,
+  kArray,
+  kObject,
+  kDate
+};
 
 type to_type(std::string_view);
 

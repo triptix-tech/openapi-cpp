@@ -19,6 +19,7 @@ void write_prelude(std::string_view path_to_header,
 #include "boost/url.hpp"
 #include "boost/json/fwd.hpp"
 
+#include "openapi/date_time.h"
 )";
 
   source << R"(#include ")" << path_to_header << "\"\n";
@@ -51,6 +52,7 @@ void write_postlude(std::ostream& header,
 
 type to_type(std::string_view s) {
   switch (cista::hash(s)) {
+    case cista::hash("date"): return type::kDate;
     case cista::hash("integer"): return type::kInteger;
     case cista::hash("number"): return type::kNumber;
     case cista::hash("string"): return type::kString;
@@ -63,6 +65,7 @@ type to_type(std::string_view s) {
 
 std::string_view to_cpp(type const t) {
   switch (t) {
+    case type::kDate: return "openapi::date_time_t";
     case type::kInteger: return "std::int64_t";
     case type::kNumber: return "double";
     case type::kString: return "std::string";

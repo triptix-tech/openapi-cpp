@@ -14,3 +14,7 @@
   url=git@github.com:felixguendling/cista.git
   branch=master
   commit=bec8bca4e6a38e38236a99ca4d4b767690fc01a1
+[date]
+  url=git@github.com:motis-project/date.git
+  branch=master
+  commit=ce88cc33b5551f66655614eeebb7c5b7189025fb

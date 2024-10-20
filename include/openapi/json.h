@@ -1,10 +1,17 @@
+#pragma once
+
 #include "boost/json.hpp"
 
 #include "utl/verify.h"
 
+#include "openapi/date_time.h"
+
 namespace openapi {
 
 namespace json = boost::json;
+
+date_time_t tag_invoke(json::value_to_tag<date_time_t>, json::value const&);
+void tag_invoke(json::value_from_tag, json::value&, date_time_t const);
 
 template <class T>
 void extract_member(json::object const& o, T& t, json::string_view key) {
