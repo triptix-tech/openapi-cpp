@@ -13,48 +13,42 @@ date_time_t now() {
 }
 
 void parse(std::string_view s, date_time_t& v) {
-  auto lower = std::string{s};
-  std::transform(begin(lower), end(lower), begin(lower),
-                 [](auto c) { return std::tolower(c); });
+  auto in = std::istringstream{std::string{s}};
 
-  auto in = std::istringstream{lower};
+  auto tp = date::sys_time<std::chrono::milliseconds>{};
+  in >> date::parse("%FT%TZ", tp);
 
-  auto ot = offset_time{};
-  in >> date::parse("%Ft%T%Ez", ot.time_, ot.offset_);
   if (!in.fail()) {
-    v = ot;
+    v = tp;
+    return;
+  }
+
+  auto offset = std::chrono::minutes{};
+  in.clear();
+  in.str(std::string{s});
+  in >> date::parse("%FT%T%Ez", tp, offset);
+  if (!in.fail()) {
+    v = {tp, offset};
     return;
   }
 
   in.clear();
-  in.seekg(0);
-
-  in >> date::parse("%Ft%H:%M%Ez", ot.time_, ot.offset_);
+  in.str(std::string{s});
+  in >> date::parse("%FT%H:%MZ", tp);
   if (!in.fail()) {
-    v = ot;
+    v = tp;
     return;
   }
 
   in.clear();
-  in.seekg(0);
-
-  auto sys_time = std::chrono::sys_seconds{};
-  in >> date::parse("%Ft%Tz", sys_time);
+  in.str(std::string{s});
+  in >> date::parse("%FT%H:%M%Ez", tp, offset);
   if (!in.fail()) {
-    v = sys_time;
+    v = {tp, offset};
     return;
   }
 
-  in.clear();
-  in.seekg(0);
-
-  in >> date::parse("%Ft%H:%Mz", sys_time);
-  if (!in.fail()) {
-    v = sys_time;
-    return;
-  }
-
-  throw utl::fail("failed to parse timestamp {}", lower);
+  throw utl::fail("failed to parse timestamp \"{}\"", s);
 }
 
 }  // namespace openapi
