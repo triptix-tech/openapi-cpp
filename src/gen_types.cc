@@ -52,7 +52,7 @@ void write_postlude(std::ostream& header,
 
 type to_type(std::string_view s) {
   switch (cista::hash(s)) {
-    case cista::hash("date"): return type::kDate;
+    case cista::hash("date-time"): return type::kDate;
     case cista::hash("integer"): return type::kInteger;
     case cista::hash("number"): return type::kNumber;
     case cista::hash("string"): return type::kString;
