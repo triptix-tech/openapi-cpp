@@ -24,7 +24,7 @@ enum class type {
   kDate
 };
 
-type to_type(std::string_view);
+type to_type(YAML::Node const& schema);
 
 std::string_view to_cpp(type const);
 

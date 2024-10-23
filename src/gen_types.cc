@@ -50,12 +50,23 @@ void write_postlude(std::ostream& header,
   }
 }
 
-type to_type(std::string_view s) {
+type to_type(YAML::Node const& schema) {
+  auto const s = schema["type"].as<std::string_view>();
+  auto const format_node = schema["format"];
+  auto const format =
+      format_node.IsDefined() ? format_node.as<std::string_view>() : "";
   switch (cista::hash(s)) {
-    case cista::hash("date-time"): return type::kDate;
+    case cista::hash("date-time"):;
     case cista::hash("integer"): return type::kInteger;
     case cista::hash("number"): return type::kNumber;
-    case cista::hash("string"): return type::kString;
+    case cista::hash("string"):
+      if (format.empty()) {
+        return type::kString;
+      } else if (format == "date-time") {
+        return type::kDate;
+      } else {
+        throw utl::fail("unknown format {}", format);
+      }
     case cista::hash("array"): return type::kArray;
     case cista::hash("boolean"): return type::kBoolean;
     case cista::hash("object"): return type::kObject;
@@ -190,10 +201,13 @@ std::string get_type(YAML::Node const& root,
   if (ref.IsDefined()) {
     auto const enum_postfix =
         resolve_schema(root, schema)["enum"].IsDefined() ? "Enum" : "";
-    return std::string{ref_name(ref)} + enum_postfix;
+    auto const x = std::string{ref_name(ref)} + enum_postfix;
+    auto const has_default = schema["default"].IsDefined();
+    return required || has_default ? x
+                                   : std::string{"std::optional<"} + x + ">";
   }
 
-  auto const type = to_type(schema["type"].as<std::string_view>());
+  auto const type = to_type(schema);
   auto const enumera = schema["enum"];
   auto const t = std::string{enumera.IsDefined() ? std::string{name} + "Enum"
                                                  : to_cpp(type)};
@@ -229,7 +243,7 @@ void gen_value(YAML::Node const& root,
     return;
   }
 
-  auto const type = to_type(schema["type"].as<std::string_view>());
+  auto const type = to_type(schema);
   auto const enumera = schema["enum"];
   if (enumera) {
     out << name << "Enum::" << default_value;
@@ -315,7 +329,7 @@ void gen_type(std::string_view name,
     return;
   }
 
-  auto const type = to_type(schema["type"].as<std::string_view>());
+  auto const type = to_type(schema);
 
   auto const is_in_required_list =
       [&, required = schema["required"]](std::string_view name) {
