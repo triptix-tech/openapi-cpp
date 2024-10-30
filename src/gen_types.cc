@@ -155,10 +155,16 @@ bool gen_enum(std::string_view type_name,
     }
 
     {
+      header << "std::ostream& operator<<(std::ostream&, " << name << ");\n\n";
       header << "void tag_invoke(boost::json::value_from_tag, "
                 "boost::json::value&, "
              << name << ");\n";
 
+      source << "std::ostream& operator<<(std::ostream& out, " << name
+             << " x) {\n"
+             << "  return out << "
+                "boost::json::serialize(boost::json::value_from(x));\n"
+             << "}\n\n";
       source << "void tag_invoke(boost::json::value_from_tag, "
                 "boost::json::value& jv, "
              << name
@@ -386,6 +392,15 @@ bool {}::operator>=({} const&) const = default;
 )",
                             name, name, name, name, name, name, name, name,
                             name, name, name, name, name, name);
+
+      // OSTREAM
+      header << "  friend std::ostream& operator<<(std::ostream&, " << name
+             << " const&);\n\n";
+      source << "std::ostream& operator<<(std::ostream& out, " << name
+             << " const& x) {\n"
+             << "  return out << "
+                "boost::json::serialize(boost::json::value_from(x));\n"
+             << "}\n\n";
 
       // JSON -> TYPE
       header << "  friend " << name << " tag_invoke(boost::json::value_to_tag<"
