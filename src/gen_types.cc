@@ -82,7 +82,7 @@ std::string_view to_cpp(type const t) {
     case type::kString: return "std::string";
     case type::kBoolean: return "bool";
     case type::kArray: return "std::vector";
-    case type::kObject: return "std::map<std::string, std::string>";
+    case type::kObject: return "std::map<std::string, std::uint64_t>";
     default: std::unreachable();
   }
 }
