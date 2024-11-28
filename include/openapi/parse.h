@@ -10,6 +10,7 @@
 #include "utl/verify.h"
 
 #include "openapi/date_time.h"
+#include "openapi/missing_param_exception.h"
 
 namespace openapi {
 
@@ -58,7 +59,7 @@ T parse_param(boost::urls::params_view const& params,
   } else {
     if constexpr (!is_optional_v<T>) {
       if (!default_value.has_value()) {
-        throw utl::fail("required parameter {} not set", name);
+        throw missing_param_exception{name};
       }
     }
   }
