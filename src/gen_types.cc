@@ -33,6 +33,23 @@ void write_prelude(std::string_view path_to_header,
 #include "openapi/json.h"
 #include "openapi/parse.h"
 
+namespace std {
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, std::vector<T> const& v) {
+  auto first = true;
+  for (auto const& x : v) {
+    if (!first) {
+      out << ",";
+    }
+    first = false;
+    out << x;
+  }
+  return out;
+}
+
+}  // namespace std
+
 )";
 
   if (ns.has_value()) {
@@ -163,7 +180,8 @@ bool gen_enum(std::string_view type_name,
       source << "std::ostream& operator<<(std::ostream& out, " << name
              << " x) {\n"
              << "  return out << "
-                "boost::json::serialize(boost::json::value_from(x));\n"
+                "static_cast<std::string_view>(boost::json::value_from(x).as_"
+                "string());\n"
              << "}\n\n";
       source << "void tag_invoke(boost::json::value_from_tag, "
                 "boost::json::value& jv, "
@@ -305,8 +323,11 @@ void write_params(YAML::Node const& root,
   auto const id = n["operationId"].as<std::string>() + "_params";
 
   header << "struct " << id << " {\n";
+  header << "  explicit " << id << "();\n";
   header << "  explicit " << id << "(boost::urls::params_view const&);\n";
+  header << "  boost::urls::url to_url() const;\n";
 
+  source << id << "::" << id << "() = default;\n";
   source << id << "::" << id << "(boost::urls::params_view const& params)";
 
   auto const parameters = n["parameters"];
@@ -319,6 +340,32 @@ void write_params(YAML::Node const& root,
     }
   }
   source << "\n  {}\n\n";
+
+  if (parameters.IsDefined() && parameters.size() != 0) {
+    source << "boost::urls::url " << id << "::to_url() const {\n";
+    source << "  auto u = boost::urls::url{\"/\"};\n";
+    for (auto const& p : parameters) {
+      auto const name = p["name"].as<std::string_view>();
+      auto const schema = p["schema"];
+      auto const has_default = schema["default"].IsDefined();
+      auto const is_optional = !is_required(p) && !has_default;
+      if (is_optional) {
+        source << "  if (" << name << "_.has_value()) {\n  ";
+      }
+      source << "  u.params().append({\"" << name
+             << "\", fmt::to_string(fmt::streamed(" << (is_optional ? "*" : "")
+             << name << "_))});\n";
+      if (is_optional) {
+        source << "  }\n";
+      }
+    }
+    source << "  return u;\n";
+    source << "}\n";
+  } else {
+    source << "boost::urls::url " << id
+           << "::to_url() const { return boost::urls::url{\"/\"}; }\n";
+  }
+
   for (auto const& p : n["parameters"]) {
     auto const name = p["name"].as<std::string_view>();
     gen_member(root, name, is_required(p), p["schema"], header);

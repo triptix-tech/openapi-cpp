@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <iosfwd>
 
 namespace openapi {
 
@@ -13,6 +14,8 @@ struct offset_time {
       std::chrono::minutes const offset = std::chrono::minutes{0})
       : offset_{offset},
         time_{std::chrono::time_point_cast<std::chrono::minutes>(t)} {}
+
+  friend std::ostream& operator<<(std::ostream&, offset_time const&);
 
   operator std::chrono::sys_seconds() const { return time_; }
   std::chrono::sys_seconds operator*() const { return time_; }

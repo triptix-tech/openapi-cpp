@@ -1,11 +1,19 @@
 #include "openapi/date_time.h"
 
+#include <ostream>
+
 #include "utl/verify.h"
 
 #include "date/date.h"
 #include "date/tz.h"
 
 namespace openapi {
+
+std::ostream& operator<<(std::ostream& out, date_time_t const& t) {
+  utl::verify(t.offset_ == std::chrono::minutes{0}, "offset not supported yet");
+  out << date::format("%FT%TZ", t.time_);
+  return out;
+}
 
 date_time_t now() {
   return std::chrono::time_point_cast<std::chrono::seconds>(
