@@ -44,13 +44,6 @@ void gen_member(YAML::Node const& root,
                 std::ostream& header,
                 std::ostream& source);
 
-void gen_value(YAML::Node const& root,
-               std::string_view name,
-               YAML::Node const& schema,
-               YAML::Node const& default_value,
-               std::ostream& header,
-               std::ostream& source);
-
 void gen_member_init(YAML::Node const& root,
                      YAML::Node const& x,
                      bool is_required,

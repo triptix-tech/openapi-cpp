@@ -247,15 +247,6 @@ bool is_required(YAML::Node const& n) {
   return required.IsDefined() && required.as<bool>();
 }
 
-void gen_member(YAML::Node const& root,
-                std::string_view name,
-                bool required,
-                YAML::Node const& schema,
-                std::ostream& out) {
-  out << "  " << get_type(root, name, schema, required) << " " << name
-      << "_{};\n";
-}
-
 void gen_value(YAML::Node const& root,
                std::string_view name,
                YAML::Node const& schema,
@@ -287,6 +278,19 @@ void gen_value(YAML::Node const& root,
     case type::kString: out << '"' << default_value << '"'; break;
     default: out << default_value;
   }
+}
+
+void gen_member(YAML::Node const& root,
+                std::string_view name,
+                bool required,
+                YAML::Node const& schema,
+                std::ostream& out) {
+  out << "  " << get_type(root, name, schema, required) << " " << name << "_{";
+  auto const default_value = schema["default"];
+  if (default_value.IsDefined()) {
+    gen_value(root, name, schema, default_value, out);
+  }
+  out << "};\n";
 }
 
 void gen_member_init(YAML::Node const& root,
@@ -325,7 +329,7 @@ void write_params(YAML::Node const& root,
   header << "struct " << id << " {\n";
   header << "  explicit " << id << "();\n";
   header << "  explicit " << id << "(boost::urls::params_view const&);\n";
-  header << "  boost::urls::url to_url() const;\n";
+  header << "  boost::urls::url to_url(std::string_view path) const;\n";
 
   source << id << "::" << id << "() = default;\n";
   source << id << "::" << id << "(boost::urls::params_view const& params)";
@@ -342,28 +346,34 @@ void write_params(YAML::Node const& root,
   source << "\n  {}\n\n";
 
   if (parameters.IsDefined() && parameters.size() != 0) {
-    source << "boost::urls::url " << id << "::to_url() const {\n";
-    source << "  auto u = boost::urls::url{\"/\"};\n";
+    source << "boost::urls::url " << id
+           << "::to_url(std::string_view path) const {\n";
+    source << "  auto u = boost::urls::url{path};\n";
+    source << "  auto default_val = " << id << "{};\n";
     for (auto const& p : parameters) {
       auto const name = p["name"].as<std::string_view>();
       auto const schema = p["schema"];
       auto const has_default = schema["default"].IsDefined();
       auto const is_optional = !is_required(p) && !has_default;
+
+      source << "  if (default_val." << name << "_ != " << name << "_) {\n";
       if (is_optional) {
-        source << "  if (" << name << "_.has_value()) {\n  ";
+        source << "    if (" << name << "_.has_value()) {\n  ";
       }
-      source << "  u.params().append({\"" << name
+      source << "    u.params().append({\"" << name
              << "\", fmt::to_string(fmt::streamed(" << (is_optional ? "*" : "")
              << name << "_))});\n";
       if (is_optional) {
-        source << "  }\n";
+        source << "    }\n";
       }
+      source << "  }\n";
     }
     source << "  return u;\n";
     source << "}\n";
   } else {
     source << "boost::urls::url " << id
-           << "::to_url() const { return boost::urls::url{\"/\"}; }\n";
+           << "::to_url(std::string_view path) const { return "
+              "boost::urls::url{path}; }\n";
   }
 
   for (auto const& p : n["parameters"]) {
