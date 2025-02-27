@@ -14,6 +14,7 @@ target_link_libraries(openapi-generate openapi)
 target_compile_features(openapi-generate PRIVATE cxx_std_23)
 
 function(openapi_generate openapi-file lib ns)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${lib})
     add_custom_command(
             COMMAND
                 openapi-generate
