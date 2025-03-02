@@ -5,7 +5,7 @@
 [yaml-cpp]
   url=git@github.com:triptix-tech/yaml-cpp.git
   branch=master
-  commit=1d8ca1f35eb3a9c9142462b28282a848e5d29a91
+  commit=39f737443b05e4135e697cb91c2b7b18095acd53
 [boost]
   url=git@github.com:motis-project/boost.git
   branch=master
