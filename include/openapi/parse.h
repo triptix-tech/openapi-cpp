@@ -50,7 +50,8 @@ void parse(std::string_view s, std::optional<T>& v) {
 template <typename T>
 T parse_param(boost::urls::params_view const& params,
               std::string_view name,
-              std::optional<T> const& default_value = std::nullopt) {
+              std::optional<T> const& default_value = std::nullopt,
+              bool const allow_missing = false) {
   auto const it = params.find(name);
   if (it != params.end()) {
     auto v = T{};
@@ -58,7 +59,7 @@ T parse_param(boost::urls::params_view const& params,
     return v;
   } else {
     if constexpr (!is_optional_v<T>) {
-      if (!default_value.has_value()) {
+      if (!default_value.has_value() && !allow_missing) {
         throw missing_param_exception{name};
       }
     }

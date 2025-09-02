@@ -3,6 +3,8 @@
 #include <optional>
 #include <ostream>
 
+#include "utl/enumerate.h"
+
 namespace openapi {
 
 void write_prelude(std::string_view path_to_header,
@@ -306,8 +308,10 @@ void gen_member_init(YAML::Node const& root,
   if (default_value.IsDefined()) {
     out << ", ";
     gen_value(root, name, schema, default_value, out);
+  } else {
+    out << ", {}";
   }
-  out << ")}";
+  out << ", allow_missing)}";
 }
 
 void write_params(YAML::Node const& root,
@@ -328,11 +332,13 @@ void write_params(YAML::Node const& root,
 
   header << "struct " << id << " {\n";
   header << "  explicit " << id << "();\n";
-  header << "  explicit " << id << "(boost::urls::params_view const&);\n";
+  header << "  explicit " << id
+         << "(boost::urls::params_view const&, bool allow_missing = false);\n";
   header << "  boost::urls::url to_url(std::string_view path) const;\n";
 
   source << id << "::" << id << "() = default;\n";
-  source << id << "::" << id << "(boost::urls::params_view const& params)";
+  source << id << "::" << id
+         << "(boost::urls::params_view const& params, bool allow_missing)";
 
   auto const parameters = n["parameters"];
   if (parameters.IsDefined() && parameters.size() != 0) {
@@ -360,9 +366,15 @@ void write_params(YAML::Node const& root,
       if (is_optional) {
         source << "    if (" << name << "_.has_value()) {\n  ";
       }
-      source << "    u.params().append({\"" << name
-             << "\", fmt::to_string(fmt::streamed(" << (is_optional ? "*" : "")
-             << name << "_))});\n";
+      if (schema["type"].IsDefined() &&
+          schema["type"].as<std::string_view>() == "boolean") {
+        source << "    u.params().append({\"" << name << "\", fmt::to_string("
+               << (is_optional ? "*" : "") << name << "_)});\n";
+      } else {
+        source << "    u.params().append({\"" << name
+               << "\", fmt::to_string(fmt::streamed("
+               << (is_optional ? "*" : "") << name << "_))});\n";
+      }
       if (is_optional) {
         source << "    }\n";
       }
@@ -375,6 +387,18 @@ void write_params(YAML::Node const& root,
            << "::to_url(std::string_view path) const { return "
               "boost::urls::url{path}; }\n";
   }
+
+  header << "  auto cista_members() {\n"
+         << "    return std::tie(\n";
+  for (auto const [i, p] : utl::enumerate(n["parameters"])) {
+    auto const name = p["name"].as<std::string_view>();
+    if (i != 0U) {
+      header << ",\n";
+    }
+    header << "      " << name << "_";
+  }
+  header << "\n    );\n"
+         << "  }\n\n";
 
   for (auto const& p : n["parameters"]) {
     auto const name = p["name"].as<std::string_view>();
