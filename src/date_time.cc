@@ -2,7 +2,11 @@
 
 #include <ostream>
 
+#include "fmt/format.h"
+
 #include "utl/verify.h"
+
+#include "openapi/bad_request_exception.h"
 
 #include "date/date.h"
 #include "date/tz.h"
@@ -56,7 +60,8 @@ void parse(std::string_view s, date_time_t& v) {
     return;
   }
 
-  throw utl::fail("failed to parse timestamp \"{}\"", s);
+  throw bad_request_exception{
+      fmt::format("failed to parse timestamp \"{}\"", s)};
 }
 
 }  // namespace openapi
