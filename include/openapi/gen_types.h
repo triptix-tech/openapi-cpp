@@ -4,13 +4,12 @@
 #include <ostream>
 #include <string_view>
 
+#include "utl/to_vec.h"
 #include "utl/verify.h"
 
 #include "yaml-cpp/yaml.h"
 
 #include "cista/hash.h"
-
-#include "utl/to_vec.h"
 
 namespace openapi {
 
@@ -51,6 +50,7 @@ void gen_member_init(YAML::Node const& root,
                      std::ostream& source);
 
 void write_params(YAML::Node const& root,
+                  YAML::Node const& path,
                   YAML::Node const&,
                   std::ostream& header,
                   std::ostream& source);

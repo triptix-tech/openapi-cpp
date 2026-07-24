@@ -1,7 +1,22 @@
 paths:
-  /items:
+  /items/{param1}/{param2}:
     get:
       operationId: getItems
+      parameters:
+        - name: param1
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: param2
+          required: true
+          in: path
+          schema:
+            type: integer
+        - name: param3
+          schema:
+            type: integer
+
       responses:
         200:
           content:
@@ -10,7 +25,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Item'
-
 components:
   schemas:
     Status:

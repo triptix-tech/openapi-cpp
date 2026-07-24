@@ -66,3 +66,21 @@ TEST(openapi, parse_expect_default_value) {
       std::vector<mode>{mode::TRANSIT, mode::WALK});
   EXPECT_EQ((std::vector{mode::TRANSIT, mode::WALK}), v);
 }
+
+TEST(openapi, parse_segment_string) {
+  auto url = boost::urls::url_view{"/items/hello/42"};
+  auto v = std::string{};
+  parse_segment<std::string>(url.segments(), "param1", 1);
+  EXPECT_EQ("hello", parse_segment<std::string>(url.segments(), "param1", 1));
+}
+
+TEST(openapi, parse_segment_int) {
+  auto url = boost::urls::url_view{"/items/hello/42"};
+  EXPECT_EQ(42, parse_segment<std::int64_t>(url.segments(), "param2", 2));
+}
+
+TEST(openapi, parse_segment_out_of_bounds) {
+  auto url = boost::urls::url_view{"/items/hello"};
+  EXPECT_THROW(parse_segment<std::string>(url.segments(), "param1", 5),
+               bad_request_exception);
+}
