@@ -1,9 +1,11 @@
 #pragma once
 
+#include "boost/json.hpp"
 #include "boost/url/params_view.hpp"
 
 #include <sstream>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #include "utl/parser/arg_parser.h"
@@ -35,6 +37,20 @@ void parse(std::string_view s, T& v) {
 }
 
 template <typename T>
+concept Enum = std::is_scoped_enum_v<T>;
+
+template <Enum T>
+void parse(std::string_view s, T& v) {
+  try {
+    v = boost::json::value_to<T>(boost::json::value{s});
+  } catch (std::exception const& e) {
+    throw bad_request_exception{e.what()};
+  }
+}
+
+inline void parse(std::string_view s, std::string_view& v) { v = s; }
+
+template <typename T>
 void parse(std::string_view s, std::vector<T>& v) {
   utl::for_each_token(
       s, ',', [&](auto&& token) { parse(token.view(), v.emplace_back()); });
@@ -55,7 +71,12 @@ T parse_param(boost::urls::params_view const& params,
   auto const it = params.find(name);
   if (it != params.end()) {
     auto v = T{};
-    parse((*it).value, v);
+    try {
+      parse((*it).value, v);
+    } catch (bad_request_exception const& e) {
+      throw bad_request_exception{
+          fmt::format("parameter \"{}\": {}", name, e.what())};
+    }
     return v;
   } else {
     if constexpr (!is_optional_v<T>) {

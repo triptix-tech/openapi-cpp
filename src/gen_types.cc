@@ -30,6 +30,8 @@ void write_prelude(std::string_view path_to_header,
 
 #include "boost/json.hpp"
 
+#include "fmt/format.h"
+
 #include "utl/verify.h"
 
 #include "openapi/json.h"
@@ -154,6 +156,14 @@ bool gen_enum(std::string_view type_name,
       header << name << " tag_invoke(boost::json::value_to_tag<" << name
              << ">, boost::json::value const&);\n";
 
+      auto values = std::string{};
+      for (auto const& e : enumera) {
+        if (!values.empty()) {
+          values += ", ";
+        }
+        values += e.as<std::string>();
+      }
+
       source << name << " tag_invoke(boost::json::value_to_tag<" << name
              << ">, boost::json::value const& jv) {\n";
       source << "  auto x = " << name << "{};\n";
@@ -166,8 +176,10 @@ bool gen_enum(std::string_view type_name,
                << "; break;";
       }
       ind(source);
-      source << "default: throw utl::fail(\"enum " << name
-             << ": unknown value {}\", sv);\n";
+      source << "default:\n";
+      source << "      throw std::runtime_error{fmt::format(\n";
+      source << "          \"invalid value \\\"{}\\\" for enum " << name
+             << ", expected one of: " << values << "\", sv)};\n";
       source << "  }\n";
       source << "  return x;\n";
       source << "}\n\n";

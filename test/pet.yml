@@ -2,6 +2,12 @@ paths:
   /items:
     get:
       operationId: getItems
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Status'
       responses:
         200:
           content:
