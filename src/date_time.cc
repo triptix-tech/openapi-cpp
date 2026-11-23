@@ -30,7 +30,7 @@ void parse(std::string_view s, date_time_t& v) {
   auto tp = date::sys_time<std::chrono::milliseconds>{};
   in >> date::parse("%FT%TZ", tp);
 
-  if (!in.fail()) {
+  if (!in.fail() && in.peek() == std::char_traits<char>::eof()) {
     v = tp;
     return;
   }
@@ -39,7 +39,7 @@ void parse(std::string_view s, date_time_t& v) {
   in.clear();
   in.str(std::string{s});
   in >> date::parse("%FT%T%Ez", tp, offset);
-  if (!in.fail()) {
+  if (!in.fail() && in.peek() == std::char_traits<char>::eof()) {
     v = {tp, offset};
     return;
   }
@@ -47,7 +47,7 @@ void parse(std::string_view s, date_time_t& v) {
   in.clear();
   in.str(std::string{s});
   in >> date::parse("%FT%H:%MZ", tp);
-  if (!in.fail()) {
+  if (!in.fail() && in.peek() == std::char_traits<char>::eof()) {
     v = tp;
     return;
   }
@@ -55,7 +55,7 @@ void parse(std::string_view s, date_time_t& v) {
   in.clear();
   in.str(std::string{s});
   in >> date::parse("%FT%H:%M%Ez", tp, offset);
-  if (!in.fail()) {
+  if (!in.fail() && in.peek() == std::char_traits<char>::eof()) {
     v = {tp, offset};
     return;
   }
